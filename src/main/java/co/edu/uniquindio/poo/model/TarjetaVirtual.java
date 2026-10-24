@@ -1,5 +1,11 @@
 package co.edu.uniquindio.poo.model;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
 public class TarjetaVirtual {
     private final String numero;
     private double saldo;
@@ -8,7 +14,9 @@ public class TarjetaVirtual {
     private final List<MovimientoTarjeta> movimientos = new ArrayList<>();
 
     public TarjetaVirtual(String numero, double saldoInicial) {
-        this.numero = numero;
+        if (numero == null || numero.isBlank()) throw new IllegalArgumentException("El número de tarjeta es obligatorio.");
+        if (!Double.isFinite(saldoInicial) || saldoInicial < 0) throw new IllegalArgumentException("El saldo inicial debe ser finito y no negativo.");
+        this.numero = numero.trim();
         saldo = saldoInicial;
     }
 
@@ -62,8 +70,8 @@ public class TarjetaVirtual {
     }
 
     public void recargar(double monto) {
-        if (monto <= 0)
-            throw new IllegalArgumentException("La recarga debe ser positiva.");
+        if (!Double.isFinite(monto) || monto <= 0)
+            throw new IllegalArgumentException("La recarga debe ser finita y positiva.");
         saldo += monto;
         registrar("RECARGA", monto);
     }

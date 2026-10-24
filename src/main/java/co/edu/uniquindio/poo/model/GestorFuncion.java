@@ -23,6 +23,14 @@ public class GestorFuncion {
         return funciones.stream().filter(f -> f.getPelicula().equals(pelicula) && f.getFechaHora().isAfter(LocalDateTime.now())).toList();
     }
 
+    public synchronized Funcion programarDesdePlantilla(Funcion plantilla, String nuevoId,
+                                                           String nuevaSala, LocalDateTime nuevoHorario) {
+        if (plantilla == null) throw new IllegalArgumentException("La función plantilla es obligatoria.");
+        Funcion copia = plantilla.clonar(nuevoId, nuevaSala, nuevoHorario);
+        programarFuncion(copia);
+        return copia;
+    }
+
     public synchronized void programarFuncion(Funcion funcion) {
         if (funcion == null)
             throw new IllegalArgumentException("La función no puede estar vacía.");

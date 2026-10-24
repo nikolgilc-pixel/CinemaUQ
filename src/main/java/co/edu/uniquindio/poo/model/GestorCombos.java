@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GestorCombos {
-    public GestorCombos(List<Combo> combos) { this.combos = new ArrayList<>(combos); }
+    private final List<Combo> combos;
+
+    public GestorCombos(List<Combo> combos) { this.combos = new ArrayList<>(combos == null ? List.of() : combos); }
     public synchronized List<Combo> consultarCombos() { return List.copyOf(combos); }
     public synchronized void agregarCombo(Combo combo) {
         if (combo == null || combo.getComponentes().isEmpty())
