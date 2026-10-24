@@ -1,7 +1,8 @@
 package co.edu.uniquindio.poo.controller;
 
-import co.edu.uniquindio.poo.CinemaUQ;
+import co.edu.uniquindio.poo.view.CinemaUQ;
 import co.edu.uniquindio.poo.model.*;
+
 import java.util.*;
 
 public class CinemaController {

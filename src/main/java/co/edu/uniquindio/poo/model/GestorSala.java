@@ -14,6 +14,20 @@ public class GestorSala {
         return sala;
     }
 
+    public synchronized Sala registrar(Sala sala) {
+        if (sala == null) throw new IllegalArgumentException("La sala es obligatoria.");
+        if (salas.putIfAbsent(sala.getIdSala(), sala) != null)
+            throw new IllegalArgumentException("Ya existe una sala con ese nombre.");
+        return sala;
+    }
+
+    public synchronized Sala crearDesdePlantilla(String nuevoId, String idPlantilla) {
+        Sala plantilla = salas.get(idPlantilla);
+        if (plantilla == null) throw new IllegalArgumentException("No existe la sala plantilla.");
+        Sala copia = plantilla.clonar(nuevoId);
+        return registrar(copia);
+    }
+
     public synchronized Sala registrarSiNoExiste(String id, int filas, int columnas, TipoSala tipo) {
         Sala existente = salas.get(id);
         if (existente != null) {

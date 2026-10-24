@@ -9,9 +9,22 @@ public class GestorUsuario {
     private final Map<String, CuentaCliente> clientes = new HashMap<>();
     private final String correoAdministrador = "admin@cinemauq.edu.co";
     private final String claveAdministrador = "Admin123!";
+    private final Administrador administrador;
 
     public GestorUsuario(Cliente clienteDemo) {
+        this(clienteDemo, null);
+    }
+
+    public GestorUsuario(Cliente clienteDemo, GestorTarjeta gestorTarjeta) {
+        if (clienteDemo == null) throw new IllegalArgumentException("El cliente inicial es obligatorio.");
         clientes.put(normalizar(clienteDemo.getEmail()), new CuentaCliente(clienteDemo, "Cliente123!"));
+        if (gestorTarjeta != null && gestorTarjeta.buscar(clienteDemo.getTarjeta().getNumero()) == null)
+            gestorTarjeta.registrar(clienteDemo.getTarjeta());
+        administrador = new Administrador("ADMIN-001", "General", "Administrador CinemaUQ", correoAdministrador);
+    }
+
+    public Administrador getAdministrador() {
+        return administrador;
     }
 
     public synchronized Cliente autenticarCliente(String correo, String clave) {
