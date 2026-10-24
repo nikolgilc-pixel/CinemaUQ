@@ -11,11 +11,14 @@ import javafx.stage.FileChooser;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 public class AccesoClienteView {
@@ -27,6 +30,7 @@ public class AccesoClienteView {
     private final VBox panel = new VBox(14);
     private TipoReporte tipoReporteSeleccionado = TipoReporte.VENTAS_POR_PERIODO;
     private FormatoReporte formatoReporteSeleccionado = FormatoReporte.TXT;
+    private java.io.File posterSeleccionado;
 
     public AccesoClienteView(CinemaController controller, Runnable volver, Consumer<Cliente> alIngresar) {
         this.controller = controller;
@@ -182,6 +186,20 @@ public class AccesoClienteView {
         TextArea sinopsis = new TextArea();
         sinopsis.setPromptText("Sinopsis");
         sinopsis.setPrefRowCount(2);
+        Label nombrePoster = new Label("Ningún póster seleccionado");
+        nombrePoster.getStyleClass().add("field-label");
+        Button seleccionarPoster = boton("Seleccionar póster…", "secondary-button");
+        seleccionarPoster.setOnAction(e -> {
+            FileChooser selector = new FileChooser();
+            selector.setTitle("Seleccionar póster de la película");
+            selector.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                    "Imágenes", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"));
+            java.io.File archivo = selector.showOpenDialog(root.getScene().getWindow());
+            if (archivo != null) {
+                posterSeleccionado = archivo;
+                nombrePoster.setText(archivo.getName());
+            }
+        });
         TextField sala = new TextField("Sala 1"), hora = new TextField("19:00"), precio = new TextField("18000"), filas = new TextField("5"), columnas = new TextField("8");
         ComboBox<TipoSala> tipoSala = new ComboBox<>();
         tipoSala.getItems().setAll(TipoSala.values());
@@ -191,17 +209,23 @@ public class AccesoClienteView {
         Button registrar = boton("Registrar película y función", "primary-button");
         registrar.setOnAction(e -> ejecutar(() -> {
             if (genero.getValue() == null) throw new IllegalArgumentException("Selecciona el género.");
-            controller.registrarPelicula(obligatorio(titulo, "Escribe el título."), genero.getValue(),
+            if (posterSeleccionado == null) throw new IllegalArgumentException("Selecciona el póster de la película.");
+            String rutaPoster = guardarPoster(posterSeleccionado);
+            Pelicula peliculaRegistrada = controller.registrarPelicula(obligatorio(titulo, "Escribe el título."), genero.getValue(),
                     obligatorio(clasificacion, "Escribe la clasificación."), entero(duracion, "Duración no válida."), obligatorio(sinopsis, "Escribe la sinopsis."),
                     obligatorio(sala, "Escribe la sala."), tipoSala.getValue(), fechaHora(fecha, hora), numero(precio, "Precio no válido."),
                     entero(filas, "Filas no válidas."), entero(columnas, "Columnas no válidas."));
+            peliculaRegistrada.setRutaImagen(rutaPoster);
+            posterSeleccionado = null;
+            nombrePoster.setText("Ningún póster seleccionado");
             titulo.clear();
             genero.setValue(null);
             clasificacion.clear();
             sinopsis.clear();
             mensaje.setText("Película y primera función registradas.");
         }));
-        box.getChildren().addAll(titulo, genero, clasificacion, duracion, sinopsis, subtitulo("Primera función y sala"), sala, tipoSala, fecha, hora, precio,
+        box.getChildren().addAll(titulo, genero, clasificacion, duracion, sinopsis, seleccionarPoster, nombrePoster,
+                subtitulo("Primera función y sala"), sala, tipoSala, fecha, hora, precio,
                 subtitulo("Capacidad de la sala"), filas, columnas, registrar, new Separator(), subtitulo("Programar otra función para una película existente"));
         ComboBox<Pelicula> peliculas = new ComboBox<>();
         peliculas.setPromptText("Selecciona película");
@@ -525,6 +549,24 @@ public class AccesoClienteView {
         });
         box.getChildren().add(lista);
         return box;
+    }
+
+    private String guardarPoster(java.io.File imagen) {
+        String nombre = imagen.getName();
+        int punto = nombre.lastIndexOf('.');
+        String extension = punto >= 0 ? nombre.substring(punto).toLowerCase(java.util.Locale.ROOT) : "";
+        if (!List.of(".jpg", ".jpeg", ".png", ".gif", ".bmp").contains(extension)) {
+            throw new IllegalArgumentException("Usa una imagen JPG, PNG, GIF o BMP.");
+        }
+        try {
+            Path carpeta = Path.of(System.getProperty("user.home"), ".cinemauq", "posters");
+            Files.createDirectories(carpeta);
+            Path destino = carpeta.resolve(UUID.randomUUID() + extension);
+            Files.copy(imagen.toPath(), destino, StandardCopyOption.REPLACE_EXISTING);
+            return destino.toAbsolutePath().toString();
+        } catch (IOException ex) {
+            throw new IllegalStateException("No se pudo guardar el póster: " + ex.getMessage(), ex);
+        }
     }
 
     private TextField campo(String prompt) {

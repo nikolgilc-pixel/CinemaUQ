@@ -4,6 +4,7 @@ public class Pelicula {
     private final String id, titulo, clasificacion, sinopsis;
     private final GeneroPelicula genero;
     private final int duracionMinutos;
+    private String rutaImagen;
 
     public Pelicula(String id, String titulo, GeneroPelicula genero, String clasificacion, int duracionMinutos, String sinopsis) {
         this.id = id;
@@ -44,6 +45,12 @@ public class Pelicula {
 
     public String getSinopsis() {
         return sinopsis;
+    }
+
+    public String getRutaImagen() { return rutaImagen; }
+
+    public void setRutaImagen(String rutaImagen) {
+        this.rutaImagen = rutaImagen == null || rutaImagen.isBlank() ? null : rutaImagen.trim();
     }
 
     @Override

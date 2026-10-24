@@ -14,6 +14,8 @@ import javafx.scene.layout.*;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.Locale;
@@ -137,7 +139,19 @@ public class CarteleraView {
         }
     }
 
-    private VBox crearTarjeta(Pelicula pelicula, int indice) {
+    private Image cargarImagen(Pelicula pelicula) {
+        String ruta = pelicula.getRutaImagen();
+        if (ruta != null && ruta.startsWith("classpath:")) {
+            URL recurso = getClass().getResource(ruta.substring("classpath:".length()));
+            if (recurso != null) return new Image(recurso.toExternalForm(), true);
+        } else if (ruta != null) {
+            try {
+                Path archivo = Path.of(ruta);
+                if (Files.isRegularFile(archivo)) return new Image(archivo.toUri().toString(), true);
+            } catch (RuntimeException ignored) {
+                // Si el archivo ya no existe, se usa el póster predeterminado.
+            }
+        }
         String archivoImagen = switch (pelicula.getId()) {
             case "P1" -> "poster-anime.jpg";
             case "P2" -> "poster-robot.jpg";
@@ -145,17 +159,21 @@ public class CarteleraView {
             case "P4" -> "poster-carrera.jpg";
             default -> "poster-kart.jpg";
         };
-        String ruta = "/imagenes/" + archivoImagen;
-        URL recurso = getClass().getResource(ruta);
+        URL recurso = getClass().getResource("/imagenes/" + archivoImagen);
+        return recurso == null ? null : new Image(recurso.toExternalForm(), true);
+    }
+
+    private VBox crearTarjeta(Pelicula pelicula, int indice) {
+        Image imagenPortada = cargarImagen(pelicula);
         StackPane poster = new StackPane();
         poster.getStyleClass().add("movie-poster");
         poster.setMinHeight(190);
         poster.setPrefHeight(190);
-        if (recurso != null) {
-            ImageView imagen = new ImageView(new Image(recurso.toExternalForm(), true));
+        if (imagenPortada != null) {
+            ImageView imagen = new ImageView(imagenPortada);
             imagen.setFitWidth(280);
             imagen.setFitHeight(190);
-            imagen.setPreserveRatio(false);
+            imagen.setPreserveRatio(true);
             imagen.setSmooth(true);
             poster.getChildren().add(imagen);
         }
