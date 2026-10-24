@@ -1,6 +1,7 @@
 package co.edu.uniquindio.poo.model;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 public class SolicitudReporte {
     private final TipoReporte tipo;
