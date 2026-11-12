@@ -22,6 +22,4 @@ public class Cliente extends Usuario {
     public String getTipoUsuario() {
         return "Cliente";
     }
-
-    }
-
+}

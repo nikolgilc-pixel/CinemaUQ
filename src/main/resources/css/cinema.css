@@ -153,3 +153,17 @@
 
 .poster-overlay { -fx-padding: 14; -fx-min-width: 280px; -fx-min-height: 190px; -fx-background-color: linear-gradient(to top, rgba(16,11,22,0.96), rgba(16,11,22,0.18) 78%, transparent); -fx-background-radius: 12; }
 
+.statistics-highlight {
+    -fx-text-fill: #f4d681;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+.chart-yellow-labels .chart-title,
+.chart-yellow-labels .chart-pie-label,
+.chart-yellow-labels .chart-legend-item .label {
+    -fx-text-fill: #f4d681;
+    -fx-fill: #f4d681;
+    -fx-font-weight: bold;
+}
+.chart-yellow-labels .chart-pie-label-line { -fx-stroke: #f4d681; }
+.chart-yellow-labels .chart-legend { -fx-background-color: transparent; }

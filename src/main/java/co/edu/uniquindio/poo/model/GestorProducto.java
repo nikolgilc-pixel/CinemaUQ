@@ -1,7 +1,6 @@
 package co.edu.uniquindio.poo.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class GestorProducto {
     private final List<Producto> productos;

@@ -14,9 +14,6 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 
-/**
- * Aplicación JavaFX del sistema CinemaUQ.
- */
 public class CinemaApp extends Application {
     private final CinemaController controller = new CinemaController();
     private Scene scene;

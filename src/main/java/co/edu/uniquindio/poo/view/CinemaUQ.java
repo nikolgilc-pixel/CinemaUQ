@@ -48,9 +48,10 @@ public class CinemaUQ {
         gestorTarjeta.registrar(clienteDemo.getTarjeta());
         gestorUsuario = new GestorUsuario(clienteDemo, gestorTarjeta);
         servicio = new ServicioCineFacade(new GestorFuncion(funciones), gestorPelicula,
-                new GestorCompra(new ProxyPagoTarjeta(new PagoTarjetaVirtual())), new GestorProducto(productos),
+                new GestorCompra(new ProxyPagoTarjeta(new PagoTarjetaVirtual()),
+                        new DescuentoPorCantidadEntradas(), new ReembolsoPorTiempo()), new GestorProducto(productos),
                 new GestorCombos(List.of(combo)), new GestorPromocion(promo));
-        gestorReporte = new GestorReporte(servicio.getGestorCompra());
+        gestorReporte = new GestorReporte(servicio.getGestorCompra(), gestorUsuario);
     }
 
     public static CinemaUQ getInstancia() {

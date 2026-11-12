@@ -41,6 +41,8 @@ public class Entrada {
 
     @Override
     public String toString() {
-        return funcion.getPelicula().getTitulo() + " · Asiento " + asiento.getFila() + asiento.getNumero() + (asistida ? " · asistencia registrada" : "");
+        return funcion.getPelicula().getTitulo() + " · Asiento " +
+                asiento.getFila() + asiento.getNumero() +
+                (asistida ? " · asistencia registrada" : "");
     }
 }

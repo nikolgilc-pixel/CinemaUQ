@@ -2,13 +2,13 @@ package co.edu.uniquindio.poo.controller;
 
 import co.edu.uniquindio.poo.view.CinemaUQ;
 import co.edu.uniquindio.poo.model.*;
-
 import java.util.*;
 
 public class CinemaController {
     private final CinemaUQ cine = CinemaUQ.getInstancia();
     private final ServicioCineFacade facade = cine.getServicio();
     private Cliente clienteActivo;
+    private boolean administradorActivo;
     private final Map<Combo, IComponenteConfiteria> combosConPrecio = new IdentityHashMap<>();
     private Funcion funcion;
     private final Set<Asiento> asientos = new LinkedHashSet<>();
@@ -46,7 +46,8 @@ public class CinemaController {
     }
 
     public boolean autenticarAdministrador(String correo, String clave) {
-        return cine.getGestorUsuario().autenticarAdministrador(correo, clave);
+        administradorActivo = cine.getGestorUsuario().autenticarAdministrador(correo, clave);
+        return administradorActivo;
     }
 
     public Administrador administrador() {
@@ -55,6 +56,7 @@ public class CinemaController {
 
     public void cerrarSesion() {
         clienteActivo = null;
+        administradorActivo = false;
         funcion = null;
         asientos.clear();
         productos.clear();
@@ -109,11 +111,15 @@ public class CinemaController {
     }
 
     public double estimarTotal() {
-        if (funcion == null) return 0;
-        double total = asientos.stream().mapToDouble(a -> funcion.calcularPrecio(a)).sum();
-        total += productos.entrySet().stream().mapToDouble(e -> e.getKey().calcularPrecio() * e.getValue()).sum();
-        total += combos.entrySet().stream().mapToDouble(e -> e.getKey().calcularPrecio() * e.getValue()).sum();
-        return total;
+        return facade.estimarCompra(funcion, new ArrayList<>(asientos), productos, combos);
+    }
+
+    public void agregarObservadorCompra(IObservadorCompra observador) {
+        facade.agregarObservadorCompra(observador);
+    }
+
+    public void quitarObservadorCompra(IObservadorCompra observador) {
+        facade.quitarObservadorCompra(observador);
     }
 
     public String pagar() {
@@ -170,6 +176,12 @@ public class CinemaController {
     public Compra cancelarCompra(String id) {
         if (!clienteAutenticado()) throw new AccesoDenegadoException("Inicia sesión.");
         return facade.cancelarCompra(id, clienteActivo);
+    }
+
+    public Compra cancelarCompraPorCine(String id) {
+        if (!administradorActivo)
+            throw new AccesoDenegadoException("Solo un administrador puede registrar una cancelación del cine.");
+        return facade.cancelarCompraPorCine(id);
     }
 
     public SolicitudRecarga solicitarRecarga(double monto) {
@@ -321,3 +333,11 @@ public class CinemaController {
         return cine.getGestorUsuario().listarClientes();
     }
 }
+
+
+
+
+
+
+
+

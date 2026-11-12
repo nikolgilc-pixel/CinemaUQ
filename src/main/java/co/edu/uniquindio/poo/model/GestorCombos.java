@@ -1,15 +1,15 @@
 package co.edu.uniquindio.poo.model;
-
-import java.util.ArrayList;
-import java.util.List;
-
+import java.util.*;
 public class GestorCombos {
     private final List<Combo> combos;
 
     public GestorCombos(List<Combo> combos) {
-        this.combos = new ArrayList<>(combos == null ? List.of() : combos); }
+        this.combos = new ArrayList<>(combos);
+    }
+
     public synchronized List<Combo> consultarCombos() {
-        return List.copyOf(combos); }
+        return List.copyOf(combos);
+    }
 
     public synchronized void agregarCombo(Combo combo) {
         if (combo == null || combo.getComponentes().isEmpty())

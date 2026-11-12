@@ -43,6 +43,7 @@ public class SolicitudRecarga {
 
     @Override
     public String toString() {
-        return fecha.toLocalDate() + " · " + cliente.getNombre() + " · $" + String.format("%,.0f", monto) + " · " + estado;
+        return fecha.toLocalDate() + " · " + cliente.getNombre() +
+                " · $" + String.format("%,.0f", monto) + " · " + estado;
     }
 }

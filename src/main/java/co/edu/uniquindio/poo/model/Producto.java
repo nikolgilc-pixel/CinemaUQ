@@ -1,5 +1,7 @@
 package co.edu.uniquindio.poo.model;
 
+import co.edu.uniquindio.poo.model.StockInsuficienteException;
+
 public class Producto implements IComponenteConfiteria {
     private final String id, nombre;
     private final double precio;

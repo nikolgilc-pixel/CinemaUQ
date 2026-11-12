@@ -9,8 +9,7 @@ public class ProxyPagoTarjeta implements IPagoTarjeta {
 
     public void procesarPago(TarjetaVirtual t, double m) {
         if (t == null || !t.estaActiva()) throw new IllegalStateException("La tarjeta no está activa");
-        if (t.getSaldo() < m)
-            throw new SaldoInsuficienteException("Saldo insuficiente. Saldo: $" + t.getSaldo());
+        if (t.getSaldo() < m) throw new SaldoInsuficienteException("Saldo insuficiente. Saldo: $" + t.getSaldo());
         pagoReal.procesarPago(t, m);
     }
 }

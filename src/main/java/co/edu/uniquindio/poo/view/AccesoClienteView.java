@@ -1,10 +1,13 @@
 package co.edu.uniquindio.poo.view;
 
 import co.edu.uniquindio.poo.controller.CinemaController;
+import co.edu.uniquindio.poo.controller.ControladorPanelAdminCompras;
 import co.edu.uniquindio.poo.model.*;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
@@ -18,11 +21,13 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 public class AccesoClienteView {
     private final CinemaController controller;
+    private final ControladorPanelAdminCompras controladorComprasAdmin;
     private final Runnable volver;
     private final Consumer<Cliente> alIngresar;
     private final BorderPane root = new BorderPane();
@@ -31,12 +36,22 @@ public class AccesoClienteView {
     private TipoReporte tipoReporteSeleccionado = TipoReporte.VENTAS_POR_PERIODO;
     private FormatoReporte formatoReporteSeleccionado = FormatoReporte.TXT;
     private java.io.File posterSeleccionado;
+    private ListView<Compra> listaComprasAdmin;
+    private TextArea reporteComprasAdmin;
+    private Label totalComprasAdmin;
+    private PieChart graficoEntradas;
+    private Label estadoGraficos;
 
     public AccesoClienteView(CinemaController controller, Runnable volver, Consumer<Cliente> alIngresar) {
         this.controller = controller;
+        this.controladorComprasAdmin = new ControladorPanelAdminCompras(controller);
         this.volver = volver;
         this.alIngresar = alIngresar;
         crear();
+        controladorComprasAdmin.setAlCambiar(() -> Platform.runLater(() -> {
+            if (listaComprasAdmin != null) refrescarCompras(listaComprasAdmin, reporteComprasAdmin, totalComprasAdmin);
+        }));
+        controller.agregarObservadorCompra(controladorComprasAdmin);
     }
 
     public Parent getRoot() {
@@ -47,7 +62,7 @@ public class AccesoClienteView {
         root.getStyleClass().add("app-root");
         Button volverBtn = new Button("←  Volver a cartelera");
         volverBtn.getStyleClass().add("report-button");
-        volverBtn.setOnAction(e -> volver.run());
+        volverBtn.setOnAction(e -> { controller.quitarObservadorCompra(controladorComprasAdmin); volver.run(); });
         root.setTop(volverBtn);
         BorderPane.setAlignment(volverBtn, Pos.CENTER_LEFT);
         BorderPane.setMargin(volverBtn, new Insets(20, 28, 0, 28));
@@ -83,7 +98,11 @@ public class AccesoClienteView {
         ingresar.setOnAction(e -> {
             try {
                 if (controller.autenticarAdministrador(usuario.getText(), clave.getText())) crearPanelAdmin();
-                else alIngresar.accept(controller.iniciarSesionCliente(usuario.getText(), clave.getText()));
+                else {
+                    Cliente cliente = controller.iniciarSesionCliente(usuario.getText(), clave.getText());
+                    controller.quitarObservadorCompra(controladorComprasAdmin);
+                    alIngresar.accept(cliente);
+                }
             } catch (RuntimeException ex) {
                 mensaje.setText(ex.getMessage());
             }
@@ -114,6 +133,7 @@ public class AccesoClienteView {
             try {
                 Cliente cliente = controller.crearCuentaCliente(nombre.getText(), correo.getText(), clave.getText());
                 mensaje.setText("Cuenta creada. Tu tarjeta demo inicia con $50.000 COP.");
+                controller.quitarObservadorCompra(controladorComprasAdmin);
                 alIngresar.accept(cliente);
             } catch (RuntimeException ex) {
                 mensaje.setText(ex.getMessage());
@@ -146,7 +166,7 @@ public class AccesoClienteView {
         tabs.getTabs().add(tab("Recargar tarjeta", crearRecargaTarjeta()));
         Button salir = new Button("Volver a cartelera");
         salir.getStyleClass().add("report-button");
-        salir.setOnAction(e -> volver.run());
+        salir.setOnAction(e -> { controller.quitarObservadorCompra(controladorComprasAdmin); volver.run(); });
         panel.setMaxWidth(1160);
         panel.setMaxHeight(800);
         panel.getChildren().setAll(titulo, resumen, tabs, salir);
@@ -382,22 +402,22 @@ public class AccesoClienteView {
     private VBox crearGestionCompras() {
         VBox box = form();
         box.getChildren().add(subtitulo("Compras registradas"));
-        ListView<Compra> compras = new ListView<>();
-        compras.setPrefHeight(240);
-        compras.setCellFactory(v -> new ListCell<>() {
+        listaComprasAdmin = new ListView<>();
+        listaComprasAdmin.setPrefHeight(240);
+        listaComprasAdmin.setCellFactory(v -> new ListCell<>() {
             @Override
             protected void updateItem(Compra c, boolean empty) {
                 super.updateItem(c, empty);
                 setText(empty || c == null ? null : c.getFecha().toLocalDate() + " · " + c.getCliente().getNombre() + " · " + c.getFuncion().getPelicula().getTitulo() + " · " + c.getEntradas().size() + " entradas · $" + String.format("%,.0f", c.getTotal()) + " COP");
             }
         });
-        TextArea reporte = new TextArea();
-        reporte.setEditable(false);
-        reporte.setWrapText(true);
-        reporte.setPrefRowCount(7);
-        reporte.getStyleClass().add("summary-area");
-        Label total = new Label();
-        total.getStyleClass().add("movie-description");
+        reporteComprasAdmin = new TextArea();
+        reporteComprasAdmin.setEditable(false);
+        reporteComprasAdmin.setWrapText(true);
+        reporteComprasAdmin.setPrefRowCount(7);
+        reporteComprasAdmin.getStyleClass().add("summary-area");
+        totalComprasAdmin = new Label();
+        totalComprasAdmin.getStyleClass().add("movie-description");
         ComboBox<TipoReporte> tipo = new ComboBox<>();
         tipo.getItems().setAll(TipoReporte.values());
         tipo.setValue(tipoReporteSeleccionado);
@@ -409,26 +429,79 @@ public class AccesoClienteView {
         tipo.setOnAction(e -> {
             if (tipo.getValue() != null) {
                 tipoReporteSeleccionado = tipo.getValue();
-                reporte.setText(controller.generarReporte(tipoReporteSeleccionado));
+                reporteComprasAdmin.setText(controladorComprasAdmin.generarReporte(tipoReporteSeleccionado));
             }
         });
         formato.setOnAction(e -> {
             if (formato.getValue() != null) formatoReporteSeleccionado = formato.getValue();
         });
         Button actualizar = boton("Actualizar ventas", "secondary-button");
-        actualizar.setOnAction(e -> refrescarCompras(compras, reporte, total));
+        actualizar.setOnAction(e -> refrescarCompras(listaComprasAdmin, reporteComprasAdmin, totalComprasAdmin));
+        Button reembolsar = boton("Reembolsar por cancelación del cine", "report-button");
+        reembolsar.setOnAction(e -> ejecutar(() -> {
+            Compra seleccionada = listaComprasAdmin.getSelectionModel().getSelectedItem();
+            if (seleccionada == null) throw new IllegalArgumentException("Selecciona una compra para reembolsar.");
+            controladorComprasAdmin.reembolsarPorCancelacionDelCine(seleccionada.getId());
+            mensaje.setText("Compra reembolsada por cancelación del cine.");
+            refrescarCompras(listaComprasAdmin, reporteComprasAdmin, totalComprasAdmin);
+        }));
         Button exportar = boton("Exportar reporte", "primary-button");
         exportar.setTooltip(new Tooltip("Guarda el reporte en el formato seleccionado."));
         exportar.setOnAction(e -> guardarReporte());
-        refrescarCompras(compras, reporte, total);
-        box.getChildren().addAll(total, compras, subtitulo("Tipo de reporte"), tipo, subtitulo("Formato"), formato, subtitulo("Vista previa del reporte"), reporte, actualizar, exportar);
+        refrescarCompras(listaComprasAdmin, reporteComprasAdmin, totalComprasAdmin);
+        box.getChildren().addAll(totalComprasAdmin, listaComprasAdmin, subtitulo("Estadística · película más vendida"), crearGraficoPeliculas(),
+                subtitulo("Tipo de reporte"), tipo, subtitulo("Formato"), formato, subtitulo("Vista previa del reporte"), reporteComprasAdmin, actualizar, reembolsar, exportar);
         return box;
     }
 
     private void refrescarCompras(ListView<Compra> lista, TextArea reporte, Label total) {
-        lista.getItems().setAll(controller.compras());
-        reporte.setText(controller.generarReporte(tipoReporteSeleccionado));
-        total.setText("Compras confirmadas: " + controller.compras().size() + " · Total vendido: $" + String.format("%,.0f", controller.compras().stream().mapToDouble(Compra::getTotal).sum()) + " COP");
+        if (lista == null || reporte == null || total == null) return;
+        List<Compra> compras = controladorComprasAdmin.consultarCompras();
+        lista.getItems().setAll(compras);
+        reporte.setText(controladorComprasAdmin.generarReporte(tipoReporteSeleccionado));
+        total.setText("Compras confirmadas: " + compras.stream().filter(Compra::estaConfirmada).count()
+                + " · Total vendido: $" + String.format("%,.0f", controladorComprasAdmin.totalVentasConfirmadas()) + " COP");
+        refrescarGraficoPeliculas();
+    }
+
+    private VBox crearGraficoPeliculas() {
+        graficoEntradas = new PieChart();
+        graficoEntradas.setTitle("Entradas vendidas por película");
+        graficoEntradas.setAnimated(false);
+        graficoEntradas.setLabelsVisible(true);
+        graficoEntradas.setLegendVisible(true);
+        graficoEntradas.setPrefHeight(390);
+        graficoEntradas.setMinWidth(560);
+        graficoEntradas.getStyleClass().add("chart-yellow-labels");
+        estadoGraficos = new Label();
+        estadoGraficos.getStyleClass().add("statistics-highlight");
+        estadoGraficos.setWrapText(true);
+        VBox panel = new VBox(10, estadoGraficos, graficoEntradas);
+        panel.setAlignment(Pos.CENTER_LEFT);
+        refrescarGraficoPeliculas();
+        return panel;
+    }
+
+    private void refrescarGraficoPeliculas() {
+        if (graficoEntradas == null) return;
+        Map<String, Integer> entradas = controladorComprasAdmin.entradasPorPelicula();
+        boolean demostracion = entradas.isEmpty();
+        if (demostracion) {
+            entradas = new java.util.TreeMap<>();
+            entradas.put("El viaje de Chihiro", 36);
+            entradas.put("Interestelar", 27);
+            entradas.put("Coco", 23);
+            entradas.put("Reto a toda velocidad", 18);
+            entradas.put("Aventura sobre ruedas", 21);
+        }
+        graficoEntradas.getData().clear();
+        entradas.forEach((titulo, cantidad) -> {
+            if (cantidad > 0) graficoEntradas.getData().add(new PieChart.Data(titulo, cantidad));
+        });
+        entradas.entrySet().stream().max(Map.Entry.comparingByValue()).ifPresentOrElse(
+                top -> estadoGraficos.setText("PELÍCULA MÁS VENDIDA: " + top.getKey() + " · " + top.getValue()
+                        + " entradas" + (demostracion ? " (datos de demostración)" : "")),
+                () -> estadoGraficos.setText("Aún no hay entradas vendidas para mostrar."));
     }
 
 

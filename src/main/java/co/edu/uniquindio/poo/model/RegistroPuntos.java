@@ -1,12 +1,12 @@
 package co.edu.uniquindio.poo.model;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.*;
 
 public class RegistroPuntos {
     private final List<MovimientoPuntos> historial = new ArrayList<>();
+    private int puntosAcumulados;
+    private int puntosRedimidos;
 
     public int acumular(double valorPagado) {
         return acumularCompra(valorPagado).puntos();
@@ -15,16 +15,24 @@ public class RegistroPuntos {
     public MovimientoPuntos acumularCompra(double valorPagado) {
         int p = (int) (valorPagado / 1000);
         MovimientoPuntos movimiento = new MovimientoPuntos(p, LocalDate.now());
-        if (p > 0) historial.add(movimiento);
+        if (p > 0) {
+            historial.add(movimiento);
+            puntosAcumulados += p;
+        }
         return movimiento;
     }
 
     public void revertirMovimiento(String id) {
-        historial.removeIf(m -> m.id().equals(id));
+        historial.removeIf(m -> {
+            if (!m.id().equals(id)) return false;
+            puntosAcumulados = Math.max(0, puntosAcumulados - m.puntos());
+            return true;
+        });
     }
 
     public void recompensarAsistencia() {
         historial.add(new MovimientoPuntos(20, LocalDate.now()));
+        puntosAcumulados += 20;
     }
 
 
@@ -52,6 +60,15 @@ public class RegistroPuntos {
                 restantes -= uso;
             }
         }
+        if (restantes == 0) puntosRedimidos += puntos;
         return restantes == 0;
+    }
+
+    public int getPuntosAcumulados() {
+        return puntosAcumulados;
+    }
+
+    public int getPuntosRedimidos() {
+        return puntosRedimidos;
     }
 }

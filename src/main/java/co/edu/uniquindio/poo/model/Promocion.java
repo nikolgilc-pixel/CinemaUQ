@@ -2,7 +2,7 @@ package co.edu.uniquindio.poo.model;
 
 import java.time.LocalDate;
 
-public record Promocion (String nombre, double porcentajeDescuento, LocalDate fechaInicio, LocalDate fechaFin) {
+public record Promocion(String nombre, double porcentajeDescuento, LocalDate fechaInicio, LocalDate fechaFin) {
     public Promocion {
         if (porcentajeDescuento < 0 || porcentajeDescuento > 100 || fechaFin.isBefore(fechaInicio))
             throw new IllegalArgumentException("Promoción inválida");

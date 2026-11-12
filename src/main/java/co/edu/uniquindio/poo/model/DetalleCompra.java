@@ -10,3 +10,4 @@ public record DetalleCompra(String descripcion, int cantidad, double precioUnita
         return cantidad * precioUnitario;
     }
 }
+

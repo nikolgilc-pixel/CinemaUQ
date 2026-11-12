@@ -2,6 +2,7 @@ package co.edu.uniquindio.poo.model;
 
 import java.util.*;
 
+/** Mantiene el catálogo de películas del cine. */
 public class GestorPelicula {
     private final Map<String, Pelicula> peliculas = new LinkedHashMap<>();
 

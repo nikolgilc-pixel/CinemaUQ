@@ -1,9 +1,7 @@
 package co.edu.uniquindio.poo.model;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
 
 public class GestorTarjeta {
     private final Map<String, TarjetaVirtual> tarjetas = new LinkedHashMap<>();

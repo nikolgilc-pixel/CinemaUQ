@@ -1,9 +1,7 @@
 package co.edu.uniquindio.poo.model;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class GestorPromocion {
     private final List<Promocion> promociones = new ArrayList<>();
@@ -25,5 +23,4 @@ public class GestorPromocion {
         return promociones.stream().filter(p -> p.estaVigente(LocalDate.now())).reduce((anterior, actual) -> actual)
                 .map(p -> (IComponenteConfiteria) new ComboConPromocion(componente, p));
     }
-
 }

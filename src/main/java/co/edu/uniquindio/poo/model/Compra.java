@@ -1,13 +1,10 @@
 package co.edu.uniquindio.poo.model;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Compra {
     private final String id = UUID.randomUUID().toString();
-
     private final Cliente cliente;
     private final Funcion funcion;
     private final List<Entrada> entradas = new ArrayList<>();
@@ -15,7 +12,7 @@ public class Compra {
     private final LocalDateTime fecha = LocalDateTime.now();
     private double total;
     private double descuentoEntradas;
-    private boolean cancelada;
+    private IEstadoCompra estadoActual = new EstadoCompraPendiente();
     private int puntosObtenidos;
     private String idMovimientoPuntos;
     private final java.util.Map<Producto, Integer> productosConsumidos = new java.util.LinkedHashMap<>();
@@ -37,13 +34,38 @@ public class Compra {
         return entradas.stream().mapToDouble(Entrada::getValor).sum() + detalles.stream().mapToDouble(DetalleCompra::subtotal).sum() - descuentoEntradas;
     }
 
-    public void confirmar(double t) {
-        total = t;
+    void confirmar(double t) {
+        confirmar(t, 0);
     }
 
-    public void confirmar(double t, double descuentoEntradas) {
+    void confirmar(double t, double descuentoEntradas) {
         total = t;
         this.descuentoEntradas = descuentoEntradas;
+        estadoActual = new EstadoCompraConfirmada();
+    }
+
+    void cancelar() {
+        estadoActual.cancelar(this);
+    }
+
+    void marcarCancelada() {
+        estadoActual = new EstadoCompraCancelada();
+    }
+
+    public boolean puedeCancelar() {
+        return estadoActual.puedeCancelar();
+    }
+
+    public IEstadoCompra getEstado() {
+        return estadoActual;
+    }
+
+    public boolean estaPendiente() {
+        return estadoActual instanceof EstadoCompraPendiente;
+    }
+
+    public boolean estaConfirmada() {
+        return estadoActual instanceof EstadoCompraConfirmada;
     }
 
     public double getDescuentoEntradas() {
@@ -51,11 +73,7 @@ public class Compra {
     }
 
     public boolean isCancelada() {
-        return cancelada;
-    }
-
-    void marcarCancelada() {
-        cancelada = true;
+        return estadoActual instanceof EstadoCompraCancelada;
     }
 
     void setMovimientoPuntos(MovimientoPuntos movimiento) {
@@ -78,7 +96,7 @@ public class Compra {
     }
 
     public int registrarAsistencia(String idEntrada) {
-        if (cancelada) throw new IllegalStateException("Una compra cancelada no registra asistencia.");
+        if (!estaConfirmada()) throw new IllegalStateException("Solo una compra confirmada puede registrar asistencia.");
         if (java.time.LocalDateTime.now().isBefore(funcion.getFechaHora().plusMinutes(funcion.getPelicula().getDuracionMinutos())))
             throw new IllegalStateException("La asistencia se registra después de finalizar la función.");
         Entrada entrada = entradas.stream().filter(e -> e.getId().equals(idEntrada)).findFirst().orElseThrow(() -> new IllegalArgumentException("Entrada no encontrada en la compra."));
@@ -115,8 +133,22 @@ public class Compra {
         return total;
     }
 
+    public String generarFactura() {
+        StringBuilder factura = new StringBuilder("Factura de compra ").append(id).append(System.lineSeparator())
+                .append("Película: ").append(funcion.getPelicula().getTitulo()).append(System.lineSeparator())
+                .append("Entradas: ").append(entradas.size()).append(System.lineSeparator());
+        detalles.forEach(detalle -> factura.append(detalle.cantidad()).append(" x ")
+                .append(detalle.descripcion()).append(" · $")
+                .append(String.format("%,.0f", detalle.subtotal()))
+                .append(System.lineSeparator()));
+        return factura.append("Total: $").append(String.format("%,.0f", total)).toString();
+    }
+
     @Override
     public String toString() {
-        return fecha.toLocalDate() + " · " + funcion.getPelicula().getTitulo() + " · " + entradas.size() + " entrada(s) · $" + String.format("%,.0f", total) + (cancelada ? " · CANCELADA" : "");
+        return fecha.toLocalDate() + " · " + funcion.getPelicula().getTitulo()
+                + " · " + entradas.size() + " entrada(s) · $" +
+                String.format("%,.0f", total) + " · " + estadoActual.getClass().getSimpleName();
     }
 }
+

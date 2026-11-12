@@ -1,8 +1,6 @@
 package co.edu.uniquindio.poo.model;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GestorSala {
     private final Map<String, Sala> salas = new LinkedHashMap<>();
@@ -20,12 +18,12 @@ public class GestorSala {
             throw new IllegalArgumentException("Ya existe una sala con ese nombre.");
         return sala;
     }
-
-    public synchronized Sala crearDesdePlantilla(String nuevoId, String idPlantilla) {
+    public synchronized Sala crearDesdePlantilla(String idNuevo, String idPlantilla) {
         Sala plantilla = salas.get(idPlantilla);
-        if (plantilla == null) throw new IllegalArgumentException("No existe la sala plantilla.");
-        Sala copia = plantilla.clonar(nuevoId);
-        return registrar(copia);
+        if (plantilla == null) throw new IllegalArgumentException("No existe la sala plantilla indicada.");
+        Sala copia = plantilla.clonar(idNuevo);
+        if (salas.putIfAbsent(idNuevo, copia) != null) throw new IllegalArgumentException("Ya existe una sala con ese nombre.");
+        return copia;
     }
 
     public synchronized Sala registrarSiNoExiste(String id, int filas, int columnas, TipoSala tipo) {

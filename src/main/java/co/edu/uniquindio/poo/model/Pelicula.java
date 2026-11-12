@@ -6,7 +6,8 @@ public class Pelicula {
     private final int duracionMinutos;
     private String rutaImagen;
 
-    public Pelicula(String id, String titulo, GeneroPelicula genero, String clasificacion, int duracionMinutos, String sinopsis) {
+    public Pelicula(String id, String titulo, GeneroPelicula genero, String clasificacion,
+                    int duracionMinutos, String sinopsis) {
         this.id = id;
         this.titulo = titulo;
         this.genero = java.util.Objects.requireNonNull(genero, "El género es obligatorio.");
@@ -33,7 +34,9 @@ public class Pelicula {
         return genero.name().replace('_', ' ');
     }
 
-    public GeneroPelicula getGeneroPelicula() { return genero; }
+    public GeneroPelicula getGeneroPelicula() {
+        return genero;
+    }
 
     public String getClasificacion() {
         return clasificacion;
@@ -47,7 +50,8 @@ public class Pelicula {
         return sinopsis;
     }
 
-    public String getRutaImagen() { return rutaImagen; }
+    public String getRutaImagen() {
+        return rutaImagen; }
 
     public void setRutaImagen(String rutaImagen) {
         this.rutaImagen = rutaImagen == null || rutaImagen.isBlank() ? null : rutaImagen.trim();

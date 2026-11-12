@@ -1,17 +1,19 @@
 package co.edu.uniquindio.poo.view;
 
 import co.edu.uniquindio.poo.controller.CinemaController;
+import co.edu.uniquindio.poo.controller.ControladorHistorialCompras;
 import co.edu.uniquindio.poo.model.*;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-
 import java.util.List;
 
 public class CinemaView {
     private final CinemaController controller;
+    private final ControladorHistorialCompras controladorHistorial;
     private final Runnable alVolver;
     private final BorderPane root = new BorderPane();
     private final ComboBox<Pelicula> peliculas = new ComboBox<>();
@@ -28,13 +30,16 @@ public class CinemaView {
 
     public CinemaView(CinemaController controller, Runnable alVolver) {
         this.controller = controller;
+        this.controladorHistorial = new ControladorHistorialCompras(controller);
         this.alVolver = alVolver;
         crear();
+        controladorHistorial.setAlCambiar(() -> Platform.runLater(() -> {
+            dibujarAsientos();
+            actualizarResumen();
+        }));
+        controller.agregarObservadorCompra(controladorHistorial);
     }
-
-    public Parent getRoot() {
-        return root;
-    }
+    public Parent getRoot() { return root; }
 
     private void crear() {
         root.getStyleClass().add("app-root");
@@ -96,27 +101,23 @@ public class CinemaView {
         HBox.setHgrow(espacio, Priority.ALWAYS);
         Button cartelera = new Button("←  Cartelera");
         cartelera.getStyleClass().add("report-button");
-        cartelera.setOnAction(e -> alVolver.run());
-        Button perfil = new Button("Mi perfil");
-        perfil.getStyleClass().add("secondary-button");
-        perfil.setOnAction(e -> abrirPerfil());
+        cartelera.setOnAction(e -> { controller.quitarObservadorCompra(controladorHistorial); alVolver.run(); });
+        Button perfil = new Button("Mi perfil"); perfil.getStyleClass().add("secondary-button"); perfil.setOnAction(e -> abrirPerfil());
         Button salir = new Button("Cerrar sesión");
         salir.getStyleClass().add("secondary-button");
-        salir.setOnAction(e -> {
-            controller.cerrarSesion();
-            alVolver.run();
-        });
+        salir.setOnAction(e -> { controller.quitarObservadorCompra(controladorHistorial); controller.cerrarSesion(); alVolver.run(); });
         HBox header = new HBox(14, marca, espacio, cartelera, perfil, salir);
         header.setAlignment(Pos.CENTER_LEFT);
         header.getStyleClass().add("app-header");
         return header;
     }
-
     private VBox crearSelector() {
         Label titulo = new Label("01  ·  ELIGE TU FUNCIÓN");
         titulo.getStyleClass().add("section-title");
         infoPelicula.getStyleClass().add("movie-description");
-        VBox panel = new VBox(14, titulo, new HBox(12, campo("PELÍCULA", peliculas), campo("HORARIO", funciones)), infoPelicula);
+        VBox panel = new VBox(14, titulo,
+                new HBox(12, campo("PELÍCULA", peliculas), campo("HORARIO", funciones)),
+                infoPelicula);
         panel.getStyleClass().addAll("panel", "movie-panel");
         HBox.setHgrow(peliculas, Priority.ALWAYS);
         HBox.setHgrow(funciones, Priority.ALWAYS);
@@ -145,7 +146,10 @@ public class CinemaView {
         mapa.setHgap(8);
         mapa.setVgap(8);
         mapa.setAlignment(Pos.CENTER);
-        HBox leyenda = new HBox(14, leyenda("#34845f", "General"), leyenda("#8253c7", "VIP"), leyenda("#197c91", "Accesible"), leyenda("#514d57", "Ocupado"), leyenda("#e9b949", "Elegido"));
+        HBox leyenda = new HBox(14,
+                leyenda("#34845f", "General"), leyenda("#8253c7", "VIP"),
+                leyenda("#197c91", "Accesible"), leyenda("#514d57", "Ocupado"),
+                leyenda("#e9b949", "Elegido"));
         leyenda.setAlignment(Pos.CENTER);
         VBox panel = new VBox(17, titulo, pantallaBox, mapa, leyenda);
         panel.setAlignment(Pos.TOP_CENTER);
@@ -179,10 +183,7 @@ public class CinemaView {
         agregarProducto.setMaxWidth(Double.MAX_VALUE);
         agregarProducto.setOnAction(e -> {
             Producto producto = listaProductos.getSelectionModel().getSelectedItem();
-            if (producto == null) {
-                mostrarEstado("Selecciona un producto de la lista.");
-                return;
-            }
+            if (producto == null) { mostrarEstado("Selecciona un producto de la lista."); return; }
             controller.agregarProducto(producto, 1);
             actualizarResumen();
             mostrarEstado(producto.getNombre() + " añadido.");
@@ -193,24 +194,21 @@ public class CinemaView {
         agregarCombo.setMaxWidth(Double.MAX_VALUE);
         agregarCombo.setOnAction(e -> {
             Combo combo = listaCombos.getSelectionModel().getSelectedItem();
-            if (combo == null) {
-                mostrarEstado("Selecciona un combo de la lista.");
-                return;
-            }
+            if (combo == null) { mostrarEstado("Selecciona un combo de la lista."); return; }
             controller.agregarCombo(combo, 1);
             actualizarResumen();
             mostrarEstado(combo.getNombre() + " añadido.");
         });
 
-        VBox panel = new VBox(9, titulo, etiquetaProductos, listaProductos, agregarProducto, etiquetaCombos, listaCombos, agregarCombo);
+        VBox panel = new VBox(9, titulo, etiquetaProductos, listaProductos, agregarProducto,
+                etiquetaCombos, listaCombos, agregarCombo);
         panel.getStyleClass().add("panel");
         return panel;
     }
 
     private ListCell<Producto> celdaConfiteria() {
         return new ListCell<>() {
-            @Override
-            protected void updateItem(Producto item, boolean empty) {
+            @Override protected void updateItem(Producto item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : item.toString());
             }
@@ -219,8 +217,7 @@ public class CinemaView {
 
     private ListCell<Combo> celdaCombo() {
         return new ListCell<>() {
-            @Override
-            protected void updateItem(Combo item, boolean empty) {
+            @Override protected void updateItem(Combo item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : controller.textoCombo(item));
             }
@@ -251,7 +248,8 @@ public class CinemaView {
         movimientos.setPrefRowCount(3);
         movimientos.getStyleClass().add("movement-area");
 
-        VBox panel = new VBox(10, titulo, carrito, saldoTitulo, infoTarjeta, total, pagar, estado, movimientosLabel, movimientos);
+        VBox panel = new VBox(10, titulo, carrito, saldoTitulo, infoTarjeta, total,
+                pagar, estado, movimientosLabel, movimientos);
         panel.getStyleClass().add("panel");
         return panel;
     }
@@ -267,7 +265,8 @@ public class CinemaView {
     private void actualizarPelicula() {
         Pelicula pelicula = peliculas.getValue();
         if (pelicula == null) return;
-        infoPelicula.setText(pelicula.getGenero() + "   ·   " + pelicula.getDuracionMinutos() + " min   ·   " + pelicula.getClasificacion() + "\n" + pelicula.getSinopsis());
+        infoPelicula.setText(pelicula.getGenero() + "   ·   " + pelicula.getDuracionMinutos()
+                + " min   ·   " + pelicula.getClasificacion() + "\n" + pelicula.getSinopsis());
     }
 
     private void dibujarAsientos() {
@@ -307,9 +306,10 @@ public class CinemaView {
         Cliente cliente = controller.cliente();
         Alert opciones = new Alert(Alert.AlertType.NONE);
         opciones.setTitle("Mi perfil · CINEMAX");
-        opciones.setHeaderText(cliente.getNombre() + " · " + cliente.getEmail());
-        String movimientosPerfil = cliente.getTarjeta().getMovimientos().stream().skip(Math.max(0, cliente.getTarjeta().getMovimientos().size() - 5)).map(m -> m.tipo() + " $" + String.format("%,.0f", m.monto())).collect(java.util.stream.Collectors.joining("\n"));
-        opciones.setContentText(controller.resumenTarjeta() + "\nPuntos vigentes: " + cliente.getRegistroPuntos().consultarSaldo() + "\nÚltimos movimientos:\n" + (movimientosPerfil.isBlank() ? "Sin movimientos" : movimientosPerfil));
+        opciones.setHeaderText(cliente.getNombre()+" · "+cliente.getEmail());
+        String movimientosPerfil=cliente.getTarjeta().getMovimientos().stream().skip(Math.max(0,cliente.getTarjeta().getMovimientos().size()-5))
+                .map(m -> m.tipo()+" $"+String.format("%,.0f",m.monto())).collect(java.util.stream.Collectors.joining("\n"));
+        opciones.setContentText(controller.resumenTarjeta()+"\nPuntos vigentes: "+cliente.getRegistroPuntos().consultarSaldo()+"\nÚltimos movimientos:\n"+(movimientosPerfil.isBlank()?"Sin movimientos":movimientosPerfil));
         ButtonType recargar = new ButtonType("Solicitar recarga");
         ButtonType compras = new ButtonType("Mis compras / cancelar");
         ButtonType canje = new ButtonType("Canjear puntos");
@@ -318,77 +318,21 @@ public class CinemaView {
         opciones.getButtonTypes().setAll(recargar, compras, canje, asistencia, cerrar);
         opciones.showAndWait().ifPresent(seleccion -> {
             if (seleccion == recargar) {
-                TextInputDialog monto = new TextInputDialog();
-                monto.setTitle("Solicitar recarga");
-                monto.setHeaderText("La recarga se acredita cuando la apruebe administración.");
-                monto.setContentText("Monto en COP:");
-                monto.showAndWait().ifPresent(valor -> {
-                    try {
-                        SolicitudRecarga s = controller.solicitarRecarga(Double.parseDouble(valor));
-                        mostrarEstado("Solicitud enviada por $" + String.format("%,.0f", s.getMonto()) + ". Está pendiente de aprobación.");
-                    } catch (RuntimeException ex) {
-                        mostrarEstado("Monto inválido. Escribe un valor numérico positivo.");
-                    }
-                });
+                TextInputDialog monto = new TextInputDialog(); monto.setTitle("Solicitar recarga"); monto.setHeaderText("La recarga se acredita cuando la apruebe administración."); monto.setContentText("Monto en COP:");
+                monto.showAndWait().ifPresent(valor -> { try { SolicitudRecarga s=controller.solicitarRecarga(Double.parseDouble(valor)); mostrarEstado("Solicitud enviada por $"+String.format("%,.0f",s.getMonto())+". Está pendiente de aprobación."); } catch (RuntimeException ex) { mostrarEstado("Monto inválido. Escribe un valor numérico positivo."); } });
             } else if (seleccion == canje) {
-                TextInputDialog dialog = new TextInputDialog();
-                dialog.setTitle("Canje de puntos");
-                dialog.setHeaderText("Cada 100 puntos acredita $1.000 COP en tu tarjeta.");
-                dialog.setContentText("Puntos a canjear:");
-                dialog.showAndWait().ifPresent(valor -> {
-                    try {
-                        int acreditado = controller.canjearPuntos(Integer.parseInt(valor));
-                        mostrarEstado("Canje aprobado: se acreditaron $" + String.format("%,.0f", acreditado) + " COP en tu tarjeta.");
-                        actualizarResumen();
-                    } catch (RuntimeException ex) {
-                        mostrarEstado(ex.getMessage());
-                    }
-                });
+                TextInputDialog dialog=new TextInputDialog(); dialog.setTitle("Canje de puntos"); dialog.setHeaderText("Cada 100 puntos acredita $1.000 COP en tu tarjeta."); dialog.setContentText("Puntos a canjear:");
+                dialog.showAndWait().ifPresent(valor -> { try { int acreditado=controller.canjearPuntos(Integer.parseInt(valor)); mostrarEstado("Canje aprobado: se acreditaron $"+String.format("%,.0f",acreditado)+" COP en tu tarjeta."); actualizarResumen(); } catch(RuntimeException ex) { mostrarEstado(ex.getMessage()); } });
             } else if (seleccion == asistencia) {
-                List<Compra> historial = controller.comprasDelCliente().stream().filter(c -> !c.isCancelada() && c.getEntradas().stream().anyMatch(en -> !en.isAsistida())).toList();
-                if (historial.isEmpty()) {
-                    mostrarEstado("No hay entradas pendientes de validar.");
-                    return;
-                }
-                ChoiceDialog<Compra> cd = new ChoiceDialog<>(historial.get(0), historial);
-                cd.setTitle("Validar asistencia");
-                cd.setHeaderText("La asistencia se valida después de finalizar la función.");
-                cd.setContentText("Compra:");
-                cd.showAndWait().ifPresent(compra -> {
-                    List<Entrada> pendientes = compra.getEntradas().stream().filter(en -> !en.isAsistida()).toList();
-                    ChoiceDialog<Entrada> ed = new ChoiceDialog<>(pendientes.get(0), pendientes);
-                    ed.setTitle("Entrada");
-                    ed.setHeaderText("Selecciona la entrada usada.");
-                    ed.showAndWait().ifPresent(entrada -> {
-                        try {
-                            controller.registrarAsistencia(compra, entrada.getId());
-                            mostrarEstado("Asistencia registrada: ganaste 20 puntos.");
-                            actualizarResumen();
-                        } catch (RuntimeException ex) {
-                            mostrarEstado(ex.getMessage());
-                        }
-                    });
-                });
+                List<Compra> historial=controladorHistorial.consultarCompras().stream().filter(c -> !c.isCancelada() && c.getEntradas().stream().anyMatch(en -> !en.isAsistida())).toList();
+                if(historial.isEmpty()) { mostrarEstado("No hay entradas pendientes de validar."); return; }
+                ChoiceDialog<Compra> cd=new ChoiceDialog<>(historial.get(0),historial); cd.setTitle("Validar asistencia"); cd.setHeaderText("La asistencia se valida después de finalizar la función."); cd.setContentText("Compra:");
+                cd.showAndWait().ifPresent(compra -> { List<Entrada> pendientes=compra.getEntradas().stream().filter(en -> !en.isAsistida()).toList(); ChoiceDialog<Entrada> ed=new ChoiceDialog<>(pendientes.get(0),pendientes); ed.setTitle("Entrada"); ed.setHeaderText("Selecciona la entrada usada."); ed.showAndWait().ifPresent(entrada -> { try { controller.registrarAsistencia(compra,entrada.getId()); mostrarEstado("Asistencia registrada: ganaste 20 puntos."); actualizarResumen(); } catch(RuntimeException ex) { mostrarEstado(ex.getMessage()); } }); });
             } else if (seleccion == compras) {
-                List<Compra> historial = controller.comprasDelCliente().stream().filter(c -> !c.isCancelada()).toList();
-                if (historial.isEmpty()) {
-                    mostrarEstado("Aún no tienes compras activas para cancelar.");
-                    return;
-                }
-                ChoiceDialog<Compra> dialog = new ChoiceDialog<>(historial.get(0), historial);
-                dialog.setTitle("Mis compras");
-                dialog.setHeaderText("Selecciona una compra. Se puede cancelar hasta 2 horas antes de la función.");
-                dialog.setContentText("Compra:");
-                dialog.showAndWait().ifPresent(compra -> {
-                    try {
-                        controller.cancelarCompra(compra.getId());
-                        mostrarEstado("Compra cancelada; el reembolso quedó en tu tarjeta y los asientos volvieron a estar disponibles.");
-                        dibujarAsientos();
-                        actualizarResumen();
-                    } catch (RuntimeException ex) {
-                        mostrarEstado(ex.getMessage());
-                    }
-                });
+                List<Compra> historial=controladorHistorial.consultarCompras().stream().filter(c -> !c.isCancelada()).toList();
+                if (historial.isEmpty()) { mostrarEstado("Aún no tienes compras activas para cancelar."); return; }
+                ChoiceDialog<Compra> dialog=new ChoiceDialog<>(historial.get(0),historial); dialog.setTitle("Mis compras"); dialog.setHeaderText("Selecciona una compra. Se puede cancelar hasta 2 horas antes de la función."); dialog.setContentText("Compra:");
+                dialog.showAndWait().ifPresent(compra -> { try { controladorHistorial.cancelarCompra(compra.getId()); mostrarEstado("Compra cancelada; el reembolso quedó en tu tarjeta y los asientos volvieron a estar disponibles."); dibujarAsientos(); actualizarResumen(); } catch(RuntimeException ex) { mostrarEstado(ex.getMessage()); } });
             }
         });
     }
@@ -407,14 +351,15 @@ public class CinemaView {
             mostrarEstado(ex.getMessage());
         }
     }
-
     private void actualizarResumen() {
         carrito.setText(controller.resumenCarrito());
         infoTarjeta.setText(controller.resumenTarjeta());
         total.setText(String.format("Total estimado   $%,.0f COP", controller.estimarTotal()));
         StringBuilder texto = new StringBuilder();
         List<MovimientoTarjeta> recientes = controller.movimientos();
-        recientes.stream().skip(Math.max(0, recientes.size() - 3)).forEach(m -> texto.append(m.tipo()).append("  ·  $").append(String.format("%,.0f", m.monto())).append("  ·  ").append(m.fechaHora()).append('\n'));
+        recientes.stream().skip(Math.max(0, recientes.size() - 3)).forEach(m ->
+                texto.append(m.tipo()).append("  ·  $").append(String.format("%,.0f", m.monto()))
+                        .append("  ·  ").append(m.fechaHora()).append('\n'));
         if (texto.isEmpty()) texto.append("Todavía no hay movimientos.");
         movimientos.setText(texto.toString());
     }

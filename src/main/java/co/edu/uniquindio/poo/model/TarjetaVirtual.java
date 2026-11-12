@@ -1,10 +1,9 @@
 package co.edu.uniquindio.poo.model;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import co.edu.uniquindio.poo.model.SaldoInsuficienteException;
+
+import java.time.*;
+import java.util.*;
 
 public class TarjetaVirtual {
     private final String numero;
@@ -14,9 +13,7 @@ public class TarjetaVirtual {
     private final List<MovimientoTarjeta> movimientos = new ArrayList<>();
 
     public TarjetaVirtual(String numero, double saldoInicial) {
-        if (numero == null || numero.isBlank()) throw new IllegalArgumentException("El número de tarjeta es obligatorio.");
-        if (!Double.isFinite(saldoInicial) || saldoInicial < 0) throw new IllegalArgumentException("El saldo inicial debe ser finito y no negativo.");
-        this.numero = numero.trim();
+        this.numero = numero;
         saldo = saldoInicial;
     }
 
@@ -70,8 +67,7 @@ public class TarjetaVirtual {
     }
 
     public void recargar(double monto) {
-        if (!Double.isFinite(monto) || monto <= 0)
-            throw new IllegalArgumentException("La recarga debe ser finita y positiva.");
+        if (monto <= 0) throw new IllegalArgumentException("La recarga debe ser positiva.");
         saldo += monto;
         registrar("RECARGA", monto);
     }
@@ -79,8 +75,7 @@ public class TarjetaVirtual {
     public void procesarCompra(double monto) {
         if (!estaActiva()) throw new IllegalStateException("La tarjeta está bloqueada.");
         if (monto <= 0) throw new IllegalArgumentException("El pago debe ser positivo.");
-        if (monto > saldo)
-            throw new SaldoInsuficienteException("Saldo insuficiente.");
+        if (monto > saldo) throw new SaldoInsuficienteException("Saldo insuficiente.");
         saldo -= monto;
         registrar("COMPRA", monto);
     }
@@ -89,3 +84,4 @@ public class TarjetaVirtual {
         movimientos.add(new MovimientoTarjeta(tipo, monto, saldo, LocalDateTime.now()));
     }
 }
+

@@ -1,8 +1,6 @@
 package co.edu.uniquindio.poo.model;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class ServicioCineFacade {
     private final GestorFuncion gestorFuncion;
@@ -61,12 +59,30 @@ public class ServicioCineFacade {
         return gestorPromocion.aplicarPromocion(componente);
     }
 
-    public Compra comprar(Compra compra, List<Asiento> asientos, Map<Producto, Integer> productos, Map<IComponenteConfiteria, Integer> combos) {
+    public Compra comprar(Compra compra, List<Asiento> asientos, Map<Producto,
+            Integer> productos, Map<IComponenteConfiteria, Integer> combos) {
         return gestorCompra.registrarCompra(compra, asientos, productos, combos);
     }
 
-    public Compra cancelarCompra(String id, Cliente cliente) { return gestorCompra.cancelarCompra(id, cliente); }
-    public List<Compra> comprasDe(Cliente cliente) { return gestorCompra.comprasDe(cliente); }
+    public Compra cancelarCompra(String id, Cliente cliente) {
+        return gestorCompra.cancelarCompra(id, cliente);
+    }
+    public Compra cancelarCompraPorCine(String id) {
+        return gestorCompra.cancelarCompraPorCine(id);
+    }
+    public List<Compra> comprasDe(Cliente cliente) {
+        return gestorCompra.comprasDe(cliente);
+    }
+    public double estimarCompra(Funcion funcion, List<Asiento> asientos, Map<Producto, Integer> productos,
+                                Map<IComponenteConfiteria, Integer> combos) {
+        return gestorCompra.estimarTotal(funcion, asientos, productos, combos);
+    }
+    public void agregarObservadorCompra(IObservadorCompra observador) {
+        gestorCompra.agregarObservador(observador);
+    }
+    public void quitarObservadorCompra(IObservadorCompra observador) {
+        gestorCompra.quitarObservador(observador);
+    }
 
     public Pelicula agregarPelicula(Pelicula pelicula) {
         return gestorPelicula.registrar(pelicula);
@@ -78,7 +94,7 @@ public class ServicioCineFacade {
     }
 
     public Funcion programarDesdePlantilla(Funcion plantilla, String nuevoId, String nuevaSala,
-                                           java.time.LocalDateTime nuevoHorario) {
+                                            java.time.LocalDateTime nuevoHorario) {
         Funcion copia = gestorFuncion.programarDesdePlantilla(plantilla, nuevoId, nuevaSala, nuevoHorario);
         gestorPelicula.registrarSiNoExiste(copia.getPelicula());
         return copia;

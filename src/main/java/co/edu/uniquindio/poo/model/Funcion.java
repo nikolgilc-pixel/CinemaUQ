@@ -1,8 +1,8 @@
 package co.edu.uniquindio.poo.model;
 
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.*;
 
 public class Funcion {
     private final String id;
@@ -31,9 +31,6 @@ public class Funcion {
         this.precioBase = precioBase;
     }
 
-    /**
-     * Copia la función y el mapa de asientos con identificadores y horario nuevos.
-     */
     public Funcion clonar(String nuevoId, String nuevaSala, LocalDateTime nuevoHorario) {
         if (nuevoId == null || nuevoId.isBlank() || nuevaSala == null || nuevaSala.isBlank() || nuevoHorario == null)
             throw new IllegalArgumentException("El id, la sala y el horario de la copia son obligatorios.");

@@ -1,9 +1,6 @@
 package co.edu.uniquindio.poo.model;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Sala {
     private final String idSala;
@@ -35,13 +32,18 @@ public class Sala {
         return idSala;
     }
 
-    public TipoSala getTipoSala() { return tipoSala; }
+    public TipoSala getTipoSala() {
+        return tipoSala;
+    }
 
-    public int getFilas() { return filas; }
+    public int getFilas() {
+        return filas;
+    }
 
-    public int getColumnas() { return columnas; }
+    public int getColumnas() {
+        return columnas;
+    }
 
-    /** Copia la estructura de la sala con identificador nuevo y asientos disponibles independientes. */
     public Sala clonar(String nuevoId) {
         return new Sala(nuevoId, filas, columnas, tipoSala);
     }
